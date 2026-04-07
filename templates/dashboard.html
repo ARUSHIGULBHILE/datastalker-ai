@@ -1,10 +1,131 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>DataStalker AI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataStalker AI | Autonomous Data Guardian</title>
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <h1>🚀 DataStalker AI Dashboard</h1>
-    <p>System is running...</p>
+    <div class="container">
+        <h1>🛡️ DataStalker AI</h1>
+        <p class="subtitle">Autonomous Data Guardian Agent</p>
+
+        <!-- Consent Toggles -->
+        <div class="card">
+            <h2>🔐 Your Consent Settings</h2>
+            <div class="toggles">
+                <label><input type="checkbox" id="consent-email" checked> Allow Email</label>
+                <label><input type="checkbox" id="consent-phone" checked> Allow Phone</label>
+                <label><input type="checkbox" id="consent-skills" checked> Allow Skills</label>
+            </div>
+        </div>
+
+        <!-- Simulate Attack -->
+        <div class="card">
+            <h2>⚡ Live Attack Simulation</h2>
+            <button id="simulate-btn">🎬 Simulate Recruiter Attack</button>
+            <div id="simulation-result" class="result-area"></div>
+        </div>
+
+        <!-- Stalker Leaderboard -->
+        <div class="card">
+            <h2>🏆 Stalker Leaderboard</h2>
+            <table id="leaderboard-table">
+                <thead>
+                    <tr><th>Rank</th><th>Company</th><th>Attempts</th><th>Denied</th><th>Avg Risk</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Recent Requests -->
+        <div class="card">
+            <h2>📋 Recent Requests</h2>
+            <table id="requests-table">
+                <thead>
+                    <tr><th>Company</th><th>Data</th><th>Time</th><th>Risk</th><th>Decision</th><th>Reason</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            await loadLeaderboard();
+            await loadRequests();
+        }
+
+        async function loadLeaderboard() {
+            const res = await fetch('/api/leaderboard');
+            const data = await res.json();
+            const tbody = document.querySelector('#leaderboard-table tbody');
+            tbody.innerHTML = '';
+            data.forEach((row, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${idx+1}</td>
+                    <td>${row.company}</td>
+                    <td>${row.attempts}</td>
+                    <td>${row.denied}</td>
+                    <td>${Math.round(row.avg_risk)}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadRequests() {
+            const res = await fetch('/api/requests');
+            const data = await res.json();
+            const tbody = document.querySelector('#requests-table tbody');
+            tbody.innerHTML = '';
+            data.slice(0, 10).forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.company}</td>
+                    <td>${row.data_type}</td>
+                    <td>${new Date(row.timestamp).toLocaleTimeString()}</td>
+                    <td>${row.risk_score || '-'}</td>
+                    <td class="decision-${(row.decision || '').toLowerCase()}">${row.decision || 'Pending'}</td>
+                    <td>${row.reason || ''}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('simulate-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('simulate-btn');
+            btn.disabled = true;
+            btn.textContent = 'Simulating...';
+            const res = await fetch('/api/simulate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({company: 'StalkerCorp', count: 5})
+            });
+            const result = await res.json();
+            const resultDiv = document.getElementById('simulation-result');
+            resultDiv.innerHTML = `<strong>⚡ Attack simulated!</strong> ${result.results.length} requests processed. Decisions: ${result.results.map(r => r.decision).join(', ')}`;
+            await loadData();
+            btn.disabled = false;
+            btn.textContent = '🎬 Simulate Recruiter Attack';
+        });
+
+        async function updateConsent(data_type, is_allowed) {
+            await fetch('/api/consent', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({data_type, is_allowed})
+            });
+            await loadRequests();
+        }
+
+        document.getElementById('consent-email').addEventListener('change', (e) => updateConsent('email', e.target.checked));
+        document.getElementById('consent-phone').addEventListener('change', (e) => updateConsent('phone', e.target.checked));
+        document.getElementById('consent-skills').addEventListener('change', (e) => updateConsent('skills', e.target.checked));
+
+        loadData();
+        setInterval(loadData, 10000);
+    </script>
 </body>
 </html>

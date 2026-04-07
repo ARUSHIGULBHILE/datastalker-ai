@@ -1,13 +1,17 @@
 from flask import Flask, render_template
+from database.db import init_db
+from routes.api_routes import api_bp
 
-# Create Flask app instance
+
 app = Flask(__name__)
 
-# Home route
+# Register API blueprint
+app.register_blueprint(api_bp, url_prefix='/api')
+
 @app.route('/')
-def home():
+def dashboard():
     return render_template('dashboard.html')
 
-# Run the app
 if __name__ == '__main__':
-    app.run(debug=True)
+    init_db()
+    app.run(debug=True, port=5000)
